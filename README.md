@@ -123,24 +123,19 @@ Key Components:
 
 ## Installation
 
-1. Clone the repository:
+1. Install dependencies using uv:
 
 ```bash
-git clone https://github.com/yourusername/bilingual-abusive-detection.git
-cd bilingual-abusive-detection
+uv sync
 ```
 
-2. Install dependencies:
+2. Start the API server:
 
 ```bash
-pip install -r requirements.txt
+uv granian web.main:app --host 0.0.0.0 --port 8000 --interface asgi --workers {number_of_workers}
 ```
 
-3. Start the API server:
-
-```bash
-granian web.main:app --host 0.0.0.0 --port 8000 --interface asgi
-```
+Note: Replace `{number_of_workers}` with your desired number of worker processes (e.g., 4 or 8 depending on your system resources).
 
 ## API Usage
 
