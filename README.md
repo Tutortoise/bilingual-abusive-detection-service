@@ -6,201 +6,143 @@ A content moderation engine designed to maintain professional standards in our t
 
 ## Overview
 
-This engine helps maintain quality and professionalism in our platform by:
+This engine provides enterprise-grade content moderation capabilities:
 
-- Detecting inappropriate content in tutor course offerings
-- Moderating student reviews of tutors
-- Supporting both English and Indonesian content
-- Providing real-time content validation before publication
+- Real-time detection of inappropriate content
+- Multilingual support (English and Indonesian)
+- High-precision text classification
+- Scalable architecture for production deployment
+- Production-ready API endpoints
+- Comprehensive batch processing capabilities
 
-## Features
+## Key Features
 
-- Dual language support (English and Indonesian)
-- Fast response time for real-time validation
-- High accuracy text classification
-- Early detection system for obvious violations
+### Content Analysis
+
+- Multi-language support (EN/ID)
 - Character substitution detection
-- Batch processing capability for multiple reviews/courses
+- Context-aware classification
+- Pattern recognition for evasion attempts
+- Real-time content validation
 
-## Technical Details
+### Technical Capabilities
 
-### Datasets
+- Low-latency response times (<100ms)
+- High-throughput batch processing
+- Scalable worker configuration
+- Configurable confidence thresholds
+- Comprehensive logging and monitoring
 
-The model is trained on carefully curated datasets:
+## Technical Stack
 
-- **Indonesian Dataset**: [Indonesian Abusive and Hate Speech Twitter Text](https://www.kaggle.com/datasets/ilhamfp31/indonesian-abusive-and-hate-speech-twitter-text/data)
-
-- **English Dataset**: [Hate Speech and Offensive Language Detection](https://www.kaggle.com/datasets/thedevastator/hate-speech-and-offensive-language-detection/data)
-
-### Project Structure
-
-```
-.
-├── data/                  # Training datasets and word lists
-├── models/               # Trained models and configurations
-├── notebook/            # Development and training notebooks
-└── web/                 # API implementation
-```
-
-## Model Architecture
-
-### Overview
-
-The model uses a hybrid approach combining deep learning with traditional pattern matching for robust abusive text detection:
-
-1. **Early Detection System**: Fast pattern matching using optimized Trie data structures
-2. **Deep Learning Model**: Transformer-based architecture for nuanced content analysis
-
-### Components
-
-#### 1. Early Detection System
-
-- Uses an optimized Trie data structure for O(n) word matching
-- Handles character substitutions (leetspeak): e.g., "a" → "4", "i" → "1"
-- Maintains separate Tries for English and Indonesian word lists
-- Performs text sanitization and normalization
-
-#### 2. Deep Learning Model Architecture
-
-```
-Input Text → Vectorization → Positional Embedding → Transformer Blocks → Dense → Output
-```
-
-Key Components:
-
-##### Text Vectorization
-
-- Maximum sequence length: 128 tokens
-- Vocabulary size: 20,000 tokens
-- Handles both English and Indonesian text
-
-##### Positional Embedding Layer
-
-- Combines token embeddings with position information
-- Embedding dimension: 128
-- Learns position-aware representations
-
-##### Transformer Blocks
-
-- 2 transformer blocks with:
-  - Multi-head attention (8 heads)
-  - Feed-forward network (512 units)
-  - Layer normalization
-  - Dropout (0.1)
-- Regularization: L2 (0.01)
-
-##### Output Layer
-
-- Dense layer with sigmoid activation
-- Binary classification (abusive/non-abusive)
-
-### Working Mechanism
-
-1. **Text Processing Pipeline**:
-
-   ```
-   Raw Text → Sanitization → Early Detection → Deep Learning Analysis → Final Decision
-   ```
-
-2. **Decision Flow**:
-
-   - Input text is first sanitized (remove special characters, normalize spacing)
-   - Early detection system checks for known abusive words
-   - If early detection fails, the deep learning model processes the text
-   - Confidence threshold (default 0.7) determines final classification
-
-3. **Confidence Scoring**:
-
-   - Probability scores are converted to confidence values
-   - Confidence = |probability - 0.5| \* 2
-   - Higher confidence required for positive (abusive) classifications
-
-4. **Batch Processing**:
-   - Optimized for multiple text inputs
-   - Early detection runs first to filter obvious cases
-   - Remaining texts are batched for model inference
-   - Results are reordered to match input sequence
+- **Runtime**: Python 3.11+
+- **Framework**: FastAPI
+- **Server**: Granian (High-performance ASGI server)
+- **ML Framework**: TensorFlow 2.x
+- **Package Management**: UV
 
 ## Installation
 
-1. Install dependencies using uv:
+### Using Docker (Recommended)
 
 ```bash
+# Build the image
+docker build -t abusive-detection:latest .
+
+# Run the container
+docker run -d -p 8000:8000 abusive-detection:latest
+```
+
+### Manual Installation
+
+```bash
+# Install dependencies
 uv sync
+
+# Start the server
+granian web.main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --interface asgi \
+    --workers $(nproc)
 ```
 
-2. Start the API server:
+## Configuration
 
-```bash
-uv granian web.main:app --host 0.0.0.0 --port 8000 --interface asgi --workers {number_of_workers}
-```
+### Environment Variables
 
-Note: Replace `{number_of_workers}` with your desired number of worker processes (e.g., 4 or 8 depending on your system resources).
+| Variable                   | Description          | Default   |
+| -------------------------- | -------------------- | --------- |
+| `GRANIAN_HOST`             | Server host          | `0.0.0.0` |
+| `GRANIAN_PORT`             | Server port          | `8000`    |
+| `GRANIAN_WORKERS_PER_CORE` | Workers per CPU core | `2`       |
+| `GRANIAN_MAX_WORKERS`      | Maximum worker limit | `32`      |
+| `GRANIAN_LOG_LEVEL`        | Logging verbosity    | `info`    |
 
-## API Usage
+## API Reference
 
-### Single Text Validation
+### Single Text Analysis
 
-Used for individual course descriptions or reviews
-
-```python
+```http
 POST /predict
+Content-Type: application/json
+
 {
-    "text": "Tutor course description or student review text"
+    "text": "Content to analyze"
 }
 ```
 
-### Batch Processing
+### Batch Analysis
 
-Used for validating multiple reviews or course descriptions
-
-```python
+```http
 POST /predict_batch
+Content-Type: application/json
+
 {
-    "texts": ["course description 1", "student review 1", "course description 2"]
+    "texts": [
+        "First content to analyze",
+        "Second content to analyze"
+    ]
 }
 ```
 
-### Response Format
+### Response Schema
 
-#### Non-Abusive Text Example
+```typescript
+interface PredictionResponse {
+  text: string;
+  probability: float; // Range: 0-1
+  is_abusive: boolean;
+  confidence: float; // Range: 0-1
+  early_detection: boolean;
+  matched_words: string[];
+}
+```
+
+### Example Response
 
 ```json
 {
-  "text": "I had a great learning experience with this tutor. The teaching methods are effective and the explanations are very clear. Highly recommended for anyone studying calculus.",
+  "text": "Sample text for analysis",
   "probability": 0.12,
   "is_abusive": false,
-  "confidence": 0.76,
+  "confidence": 0.88,
   "early_detection": false,
   "matched_words": []
 }
 ```
 
-#### Abusive Text Example
+## Model Training
 
-```json
-{
-  "text": "This tutor is stup* as hell! Don't waste your money on this b*, total garbage teaching.",
-  "probability": 0.97,
-  "is_abusive": true,
-  "confidence": 0.94,
-  "early_detection": true,
-  "matched_words": ["stup*", "b*"]
-}
+### Datasets
+
+- **English**: [Hate Speech and Offensive Language Detection](https://www.kaggle.com/datasets/thedevastator/hate-speech-and-offensive-language-detection/data)
+- **Indonesian**: [Indonesian Abusive and Hate Speech Twitter Text](https://www.kaggle.com/datasets/ilhamfp31/indonesian-abusive-and-hate-speech-twitter-text/data)
+
+## Health Monitoring
+
+```http
+GET /health
 ```
 
-The response fields indicate:
-
-- `text`: The original input text
-- `probability`: Likelihood of the text being abusive (0 to 1)
-- `is_abusive`: Boolean flag indicating if the text is classified as abusive
-- `confidence`: Confidence level of the classification (0 to 1)
-- `early_detection`: Whether abusive content was detected through word matching
-- `matched_words`: List of abusive words found in the text (if any)
-
-## API Documentation
-
-After starting the server:
-
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+Returns service health status and basic metrics.
