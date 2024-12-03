@@ -16,6 +16,9 @@ COPY web/ ./web/
 COPY data/ ./data/
 COPY models/ ./models/
 
+RUN apt-get update -y && apt-get install curl --no-install-recommends -y && \
+    curl -o ./models/abussive_detection.keras https://storage.googleapis.com/tutortoise-bucket/model/abussive_detection.keras
+
 RUN --mount=type=cache,target=/root/.cache/uv \
 uv pip install --system -e .
 
